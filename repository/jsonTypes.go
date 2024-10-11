@@ -1,4 +1,4 @@
-package rest
+package repository
 
 type Health struct {
 	Status   string   `json:"status"`

@@ -3,26 +3,28 @@ package rest
 import (
 	"encoding/json"
 	"net/http"
+	"todo_odd/repository"
 )
 
 type ApiServer struct {
 	http.Handler
+	repository repository.TodoRepository
 }
 
 func NewApiServer() *ApiServer {
-	server := &ApiServer{}
+	api := &ApiServer{}
 
 	router := http.NewServeMux()
 
-	router.HandleFunc("/healthcheck", HealthcheckHandler)
-	router.HandleFunc("/todo", TodoHandler)
+	router.HandleFunc("/healthcheck", api.HealthcheckHandler)
+	router.HandleFunc("/todo", api.TodoHandler)
 
-	server.Handler = router
-	return server
+	api.Handler = router
+	return api
 }
 
-func HealthcheckHandler(writer http.ResponseWriter, _ *http.Request) {
-	health := Health{
+func (s ApiServer) HealthcheckHandler(writer http.ResponseWriter, _ *http.Request) {
+	health := repository.Health{
 		Status:   "OK",
 		Messages: []string{},
 	}
@@ -33,16 +35,12 @@ func HealthcheckHandler(writer http.ResponseWriter, _ *http.Request) {
 	_, _ = writer.Write(body)
 }
 
-func TodoHandler(writer http.ResponseWriter, request *http.Request) {
+func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request) {
 	var m map[string]interface{}
 	_ = json.NewDecoder(request.Body).Decode(&m)
 	_ = request.Body.Close()
 
-	todo := Todo{
-		Id:          1,
-		Title:       m["title"].(string),
-		Description: m["description"].(string),
-	}
+	todo := s.repository.AddTodo(m["title"].(string), m["description"].(string))
 	body, _ := json.Marshal(todo)
 
 	writer.WriteHeader(http.StatusCreated)
