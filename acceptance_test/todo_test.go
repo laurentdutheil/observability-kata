@@ -3,6 +3,7 @@ package acceptance_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -19,6 +20,26 @@ func TestAddValidTodo(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, response.Code)
 	m := parseBodyResponse(response)
 	assert.NotNil(t, m["id"])
+	assert.Equal(t, "New Todo", m["title"])
+	assert.Equal(t, "Description of the todo", m["description"])
+}
+
+func TestGetTodoById(t *testing.T) {
+	bodyPost := createValidTodo()
+	server := rest.NewApiServer()
+
+	r := postTodoCreation(server, bodyPost)
+	m := parseBodyResponse(r)
+	id := int(m["id"].(float64))
+
+	requestURL := fmt.Sprintf("/todo/%d", id)
+	request, _ := http.NewRequest(http.MethodGet, requestURL, nil)
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, request)
+
+	assert.Equal(t, http.StatusOK, response.Code)
+	m = parseBodyResponse(response)
+	assert.Equal(t, id, int(m["id"].(float64)))
 	assert.Equal(t, "New Todo", m["title"])
 	assert.Equal(t, "Description of the todo", m["description"])
 }

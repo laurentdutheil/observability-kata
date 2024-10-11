@@ -3,20 +3,24 @@ package rest
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"todo_odd/repository"
 )
 
 type ApiServer struct {
 	http.Handler
-	repository repository.TodoRepository
+	repository *repository.TodoRepository
 }
 
 func NewApiServer() *ApiServer {
-	api := &ApiServer{}
+	api := &ApiServer{
+		repository: &repository.TodoRepository{},
+	}
 
 	router := http.NewServeMux()
 
 	router.HandleFunc("/healthcheck", api.HealthcheckHandler)
+	router.HandleFunc("/todo/{id}", api.TodoHandlerGet)
 	router.HandleFunc("/todo", api.TodoHandler)
 
 	api.Handler = router
@@ -45,4 +49,15 @@ func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request
 
 	writer.WriteHeader(http.StatusCreated)
 	_, _ = writer.Write(body)
+}
+
+func (s ApiServer) TodoHandlerGet(writer http.ResponseWriter, request *http.Request) {
+	pathId := request.PathValue("id")
+	todoId, _ := strconv.Atoi(pathId)
+
+	todo := s.repository.Get(todoId)
+	body, _ := json.Marshal(todo)
+	_, _ = writer.Write(body)
+
+	writer.WriteHeader(http.StatusOK)
 }
