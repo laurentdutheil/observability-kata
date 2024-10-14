@@ -28,7 +28,7 @@ func NewApiServer() *ApiServer {
 }
 
 func (s ApiServer) HealthcheckHandler(writer http.ResponseWriter, _ *http.Request) {
-	health := repository.Health{
+	health := Health{
 		Status:   "OK",
 		Messages: []string{},
 	}
@@ -45,7 +45,7 @@ func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request
 	_ = request.Body.Close()
 
 	todo := s.repository.AddTodo(m["title"].(string), m["description"].(string))
-	body, _ := json.Marshal(todo)
+	body, _ := json.Marshal(createJsonTodo(todo))
 
 	writer.WriteHeader(http.StatusCreated)
 	_, _ = writer.Write(body)
@@ -56,7 +56,7 @@ func (s ApiServer) TodoHandlerGet(writer http.ResponseWriter, request *http.Requ
 	todoId, _ := strconv.Atoi(pathId)
 
 	todo := s.repository.Get(todoId)
-	body, _ := json.Marshal(todo)
+	body, _ := json.Marshal(createJsonTodo(todo))
 	_, _ = writer.Write(body)
 
 	writer.WriteHeader(http.StatusOK)

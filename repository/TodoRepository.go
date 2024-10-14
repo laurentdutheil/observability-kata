@@ -1,5 +1,11 @@
 package repository
 
+type Todo struct {
+	Id          int
+	Title       string
+	Description string
+}
+
 type TodoRepository struct {
 	todos []Todo
 }
