@@ -44,6 +44,30 @@ func TestGetTodoById(t *testing.T) {
 	assert.Equal(t, "Description of the todo", todoResponse.Description)
 }
 
+func TestGetTodos(t *testing.T) {
+	server := rest.NewApiServer()
+
+	id1 := createValidTodo(server)
+	id2 := createValidTodo(server)
+
+	request, _ := http.NewRequest(http.MethodGet, "/todo", nil)
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, request)
+
+	assert.Equal(t, http.StatusOK, response.Code)
+	var todos []rest.Todo
+	_ = json.NewDecoder(response.Body).Decode(&todos)
+	assert.Len(t, todos, 2)
+	todoResponse := todos[0]
+	assert.Equal(t, id1, todoResponse.Id)
+	assert.Equal(t, "New Todo", todoResponse.Title)
+	assert.Equal(t, "Description of the todo", todoResponse.Description)
+	todoResponse = todos[1]
+	assert.Equal(t, id2, todoResponse.Id)
+	assert.Equal(t, "New Todo", todoResponse.Title)
+	assert.Equal(t, "Description of the todo", todoResponse.Description)
+}
+
 func createValidTodo(server *rest.ApiServer) int {
 	bodyPost := validTodoForPost()
 	r := postTodoCreation(server, bodyPost)

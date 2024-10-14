@@ -40,15 +40,30 @@ func (s ApiServer) HealthcheckHandler(writer http.ResponseWriter, _ *http.Reques
 }
 
 func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request) {
-	var m map[string]interface{}
-	_ = json.NewDecoder(request.Body).Decode(&m)
-	_ = request.Body.Close()
+	switch request.Method {
+	case "GET":
+		todos := s.repository.All()
+		var bodyResponse []Todo
+		for _, todo := range todos {
+			bodyResponse = append(bodyResponse, createJsonTodo(todo))
+		}
+		body, _ := json.Marshal(bodyResponse)
 
-	todo := s.repository.AddTodo(m["title"].(string), m["description"].(string))
-	body, _ := json.Marshal(createJsonTodo(todo))
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write(body)
+		break
+	case "POST":
+		var m map[string]interface{}
+		_ = json.NewDecoder(request.Body).Decode(&m)
+		_ = request.Body.Close()
 
-	writer.WriteHeader(http.StatusCreated)
-	_, _ = writer.Write(body)
+		todo := s.repository.AddTodo(m["title"].(string), m["description"].(string))
+		body, _ := json.Marshal(createJsonTodo(todo))
+
+		writer.WriteHeader(http.StatusCreated)
+		_, _ = writer.Write(body)
+	}
+
 }
 
 func (s ApiServer) TodoHandlerGet(writer http.ResponseWriter, request *http.Request) {

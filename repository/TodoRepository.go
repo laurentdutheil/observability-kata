@@ -23,3 +23,7 @@ func (r *TodoRepository) AddTodo(title string, description string) Todo {
 func (r *TodoRepository) Get(id int) Todo {
 	return r.todos[id-1]
 }
+
+func (r *TodoRepository) All() []Todo {
+	return r.todos
+}
