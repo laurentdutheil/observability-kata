@@ -12,25 +12,25 @@ import (
 )
 
 func TestAddValidTodo(t *testing.T) {
-	bodyPost := createValidTodo()
 	server := rest.NewApiServer()
 
-	response := postTodoCreation(server, bodyPost)
+	bodyPost := validTodoForPost()
+	request, _ := http.NewRequest(http.MethodPost, "/todo", bytes.NewBuffer(bodyPost))
+	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, request)
 
 	assert.Equal(t, http.StatusCreated, response.Code)
-	m := parseBodyResponse(response)
-	assert.NotNil(t, m["id"])
-	assert.Equal(t, "New Todo", m["title"])
-	assert.Equal(t, "Description of the todo", m["description"])
+	todoResponse := parseTodoResponse(response)
+	assert.NotNil(t, todoResponse.Id)
+	assert.Equal(t, "New Todo", todoResponse.Title)
+	assert.Equal(t, "Description of the todo", todoResponse.Description)
 }
 
 func TestGetTodoById(t *testing.T) {
-	bodyPost := createValidTodo()
 	server := rest.NewApiServer()
 
-	r := postTodoCreation(server, bodyPost)
-	m := parseBodyResponse(r)
-	id := int(m["id"].(float64))
+	id := createValidTodo(server)
 
 	requestURL := fmt.Sprintf("/todo/%d", id)
 	request, _ := http.NewRequest(http.MethodGet, requestURL, nil)
@@ -38,16 +38,24 @@ func TestGetTodoById(t *testing.T) {
 	server.ServeHTTP(response, request)
 
 	assert.Equal(t, http.StatusOK, response.Code)
-	m = parseBodyResponse(response)
-	assert.Equal(t, id, int(m["id"].(float64)))
-	assert.Equal(t, "New Todo", m["title"])
-	assert.Equal(t, "Description of the todo", m["description"])
+	todoResponse := parseTodoResponse(response)
+	assert.Equal(t, id, todoResponse.Id)
+	assert.Equal(t, "New Todo", todoResponse.Title)
+	assert.Equal(t, "Description of the todo", todoResponse.Description)
 }
 
-func parseBodyResponse(response *httptest.ResponseRecorder) map[string]interface{} {
-	var m map[string]interface{}
-	_ = json.NewDecoder(response.Body).Decode(&m)
-	return m
+func createValidTodo(server *rest.ApiServer) int {
+	bodyPost := validTodoForPost()
+	r := postTodoCreation(server, bodyPost)
+	createdTodo := parseTodoResponse(r)
+	id := createdTodo.Id
+	return id
+}
+
+func parseTodoResponse(response *httptest.ResponseRecorder) rest.Todo {
+	var todo rest.Todo
+	_ = json.NewDecoder(response.Body).Decode(&todo)
+	return todo
 }
 
 func postTodoCreation(server *rest.ApiServer, bodyPost []byte) *httptest.ResponseRecorder {
@@ -58,7 +66,7 @@ func postTodoCreation(server *rest.ApiServer, bodyPost []byte) *httptest.Respons
 	return response
 }
 
-func createValidTodo() []byte {
+func validTodoForPost() []byte {
 	bodyPost := []byte(`{
 		"title": "New Todo",
 		"description": "Description of the todo"
