@@ -21,10 +21,7 @@ func TestAddValidTodo(t *testing.T) {
 	server.ServeHTTP(response, request)
 
 	assert.Equal(t, http.StatusCreated, response.Code)
-	todoResponse := parseTodoResponse(response)
-	assert.NotNil(t, todoResponse.Id)
-	assert.Equal(t, "New Todo", todoResponse.Title)
-	assert.Equal(t, "Description of the todo", todoResponse.Description)
+	assertTodoResponse(t, parseTodoResponse(response))
 }
 
 func TestGetTodoById(t *testing.T) {
@@ -38,10 +35,7 @@ func TestGetTodoById(t *testing.T) {
 	server.ServeHTTP(response, request)
 
 	assert.Equal(t, http.StatusOK, response.Code)
-	todoResponse := parseTodoResponse(response)
-	assert.Equal(t, id, todoResponse.Id)
-	assert.Equal(t, "New Todo", todoResponse.Title)
-	assert.Equal(t, "Description of the todo", todoResponse.Description)
+	assertTodoResponse(t, parseTodoResponse(response), id)
 }
 
 func TestGetTodos(t *testing.T) {
@@ -58,14 +52,8 @@ func TestGetTodos(t *testing.T) {
 	var todos []rest.Todo
 	_ = json.NewDecoder(response.Body).Decode(&todos)
 	assert.Len(t, todos, 2)
-	todoResponse := todos[0]
-	assert.Equal(t, id1, todoResponse.Id)
-	assert.Equal(t, "New Todo", todoResponse.Title)
-	assert.Equal(t, "Description of the todo", todoResponse.Description)
-	todoResponse = todos[1]
-	assert.Equal(t, id2, todoResponse.Id)
-	assert.Equal(t, "New Todo", todoResponse.Title)
-	assert.Equal(t, "Description of the todo", todoResponse.Description)
+	assertTodoResponse(t, todos[0], id1)
+	assertTodoResponse(t, todos[1], id2)
 }
 
 func createValidTodo(server *rest.ApiServer) int {
@@ -74,6 +62,16 @@ func createValidTodo(server *rest.ApiServer) int {
 	createdTodo := parseTodoResponse(r)
 	id := createdTodo.Id
 	return id
+}
+
+func assertTodoResponse(t *testing.T, todoResponse rest.Todo, expectedId ...int) {
+	if len(expectedId) == 0 {
+		assert.NotNil(t, todoResponse.Id)
+	} else {
+		assert.Equal(t, expectedId[0], todoResponse.Id)
+	}
+	assert.Equal(t, "New Todo", todoResponse.Title)
+	assert.Equal(t, "Description of the todo", todoResponse.Description)
 }
 
 func parseTodoResponse(response *httptest.ResponseRecorder) rest.Todo {
