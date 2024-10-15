@@ -2,8 +2,9 @@ package rest
 
 import (
 	"encoding/json"
-	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"strconv"
 	"todo_odd/repository"
@@ -14,8 +15,6 @@ type ApiServer struct {
 	repository *repository.TodoRepository
 }
 
-var tracer = otel.Tracer("github.com/laurentdutheil/observability-kata/rest")
-
 func NewApiServer() *ApiServer {
 	api := &ApiServer{
 		repository: &repository.TodoRepository{},
@@ -23,11 +22,19 @@ func NewApiServer() *ApiServer {
 
 	router := http.NewServeMux()
 
-	router.HandleFunc("/healthcheck", api.HealthcheckHandler)
-	router.HandleFunc("/todo/{id}", api.TodoHandlerGet)
-	router.HandleFunc("/todo", api.TodoHandler)
+	// handleFunc is a replacement for mux.HandleFunc
+	// which enriches the handler's HTTP instrumentation with the pattern as the http.route.
+	handleFunc := func(pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
+		// Configure the "http.route" for the HTTP instrumentation.
+		handler := otelhttp.WithRouteTag(pattern, http.HandlerFunc(handlerFunc))
+		router.Handle(pattern, handler)
+	}
 
-	api.Handler = router
+	handleFunc("/healthcheck", api.HealthcheckHandler)
+	handleFunc("/todo/{id}", api.TodoHandlerGet)
+	handleFunc("/todo", api.TodoHandler)
+
+	api.Handler = otelhttp.NewHandler(router, "/")
 	return api
 }
 
@@ -56,9 +63,6 @@ func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write(body)
 	case "POST":
-		_, span := tracer.Start(request.Context(), "todo creation")
-		defer span.End()
-
 		var m map[string]interface{}
 		_ = json.NewDecoder(request.Body).Decode(&m)
 		_ = request.Body.Close()
@@ -66,6 +70,8 @@ func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request
 		todo := s.repository.AddTodo(m["title"].(string), m["description"].(string))
 		body, _ := json.Marshal(createJsonTodo(todo))
 
+		span := trace.SpanFromContext(request.Context())
+		span.SetName("todo creation")
 		span.SetAttributes(attribute.Int("id", todo.Id))
 
 		writer.WriteHeader(http.StatusCreated)

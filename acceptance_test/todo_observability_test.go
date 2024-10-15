@@ -29,8 +29,16 @@ func TestTraceTodoCreation(t *testing.T) {
 	traces := inMemoryExporter.GetSpans()
 	assert.NotEmpty(t, traces)
 	assert.Equal(t, "todo creation", traces[0].Name)
-	spanAttribute := traces[0].Attributes[0]
-	assert.Equal(t, attribute.Key("id"), spanAttribute.Key)
 	todoResponse := parseTodoResponse(response)
-	assert.Equal(t, spanAttribute.Value.AsInt64(), int64(todoResponse.Id))
+	attributeValue := getAttributeValue(traces[0].Attributes, "id")
+	assert.Equal(t, attributeValue.AsInt64(), int64(todoResponse.Id))
+}
+
+func getAttributeValue(attributes []attribute.KeyValue, key attribute.Key) *attribute.Value {
+	for _, keyValue := range attributes {
+		if keyValue.Key == key {
+			return &keyValue.Value
+		}
+	}
+	return nil
 }
