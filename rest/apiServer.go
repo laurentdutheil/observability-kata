@@ -2,8 +2,8 @@ package rest
 
 import (
 	"encoding/json"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"strconv"
 	"todo_odd/repository"
@@ -12,13 +12,13 @@ import (
 type ApiServer struct {
 	http.Handler
 	repository *repository.TodoRepository
-	tracer     trace.Tracer
 }
 
-func NewApiServer(tracer trace.Tracer) *ApiServer {
+var tracer = otel.Tracer("github.com/laurentdutheil/observability-kata/rest")
+
+func NewApiServer() *ApiServer {
 	api := &ApiServer{
 		repository: &repository.TodoRepository{},
-		tracer:     tracer,
 	}
 
 	router := http.NewServeMux()
@@ -55,13 +55,9 @@ func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request
 
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write(body)
-		break
 	case "POST":
-		var span trace.Span
-		if s.tracer != nil {
-			_, span = s.tracer.Start(request.Context(), "todo creation")
-			defer span.End()
-		}
+		_, span := tracer.Start(request.Context(), "todo creation")
+		defer span.End()
 
 		var m map[string]interface{}
 		_ = json.NewDecoder(request.Body).Decode(&m)
@@ -70,15 +66,12 @@ func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request
 		todo := s.repository.AddTodo(m["title"].(string), m["description"].(string))
 		body, _ := json.Marshal(createJsonTodo(todo))
 
-		if s.tracer != nil {
-			span.SetAttributes(attribute.Int("id", todo.Id))
-		}
+		span.SetAttributes(attribute.Int("id", todo.Id))
 
 		writer.WriteHeader(http.StatusCreated)
 		_, _ = writer.Write(body)
 
 	}
-
 }
 
 func (s ApiServer) TodoHandlerGet(writer http.ResponseWriter, request *http.Request) {

@@ -12,7 +12,7 @@ import (
 )
 
 func TestAddValidTodo(t *testing.T) {
-	server := rest.NewApiServer(nil)
+	server := rest.NewApiServer()
 
 	bodyPost := validTodoForPost()
 	request, _ := http.NewRequest(http.MethodPost, "/todo", bytes.NewBuffer(bodyPost))
@@ -25,7 +25,7 @@ func TestAddValidTodo(t *testing.T) {
 }
 
 func TestGetTodoById(t *testing.T) {
-	server := rest.NewApiServer(nil)
+	server := rest.NewApiServer()
 
 	id := createValidTodo(server)
 
@@ -39,7 +39,7 @@ func TestGetTodoById(t *testing.T) {
 }
 
 func TestGetTodos(t *testing.T) {
-	server := rest.NewApiServer(nil)
+	server := rest.NewApiServer()
 
 	id1 := createValidTodo(server)
 	id2 := createValidTodo(server)

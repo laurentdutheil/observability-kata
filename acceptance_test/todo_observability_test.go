@@ -3,6 +3,7 @@ package acceptance_test
 import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
@@ -15,8 +16,9 @@ import (
 func TestTraceTodoCreation(t *testing.T) {
 	inMemoryExporter := tracetest.NewInMemoryExporter()
 	provider := trace.NewTracerProvider(trace.WithSyncer(inMemoryExporter))
-	tracer := provider.Tracer("test-tracer-todo")
-	server := rest.NewApiServer(tracer)
+	otel.SetTracerProvider(provider)
+
+	server := rest.NewApiServer()
 
 	bodyPost := validTodoForPost()
 	request, _ := http.NewRequest(http.MethodPost, "/todo", bytes.NewBuffer(bodyPost))
@@ -27,6 +29,8 @@ func TestTraceTodoCreation(t *testing.T) {
 	traces := inMemoryExporter.GetSpans()
 	assert.NotEmpty(t, traces)
 	assert.Equal(t, "todo creation", traces[0].Name)
-	assert.Equal(t, attribute.Key("id"), traces[0].Attributes[0].Key)
-	assert.Greater(t, traces[0].Attributes[0].Value.AsInt64(), int64(0))
+	spanAttribute := traces[0].Attributes[0]
+	assert.Equal(t, attribute.Key("id"), spanAttribute.Key)
+	todoResponse := parseTodoResponse(response)
+	assert.Equal(t, spanAttribute.Value.AsInt64(), int64(todoResponse.Id))
 }

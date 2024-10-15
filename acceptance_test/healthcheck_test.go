@@ -10,7 +10,7 @@ import (
 )
 
 func TestHappyHealthcheck(t *testing.T) {
-	server := rest.NewApiServer(nil)
+	server := rest.NewApiServer()
 
 	request, _ := http.NewRequest(http.MethodGet, "/healthcheck", nil)
 	response := httptest.NewRecorder()
