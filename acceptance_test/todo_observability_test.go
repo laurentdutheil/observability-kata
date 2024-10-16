@@ -2,7 +2,9 @@ package acceptance_test
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -26,19 +28,29 @@ func TestTraceTodoCreation(t *testing.T) {
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, request)
 
-	traces := inMemoryExporter.GetSpans()
-	assert.NotEmpty(t, traces)
-	assert.Equal(t, "todo creation", traces[0].Name)
+	spans := inMemoryExporter.GetSpans()
+	span := hasSpanWithName(t, spans, "todo creation")
 	todoResponse := parseTodoResponse(response)
-	attributeValue := getAttributeValue(traces[0].Attributes, "id")
-	assert.Equal(t, attributeValue.AsInt64(), int64(todoResponse.Id))
+	hasAttribute(t, span, "id", attribute.IntValue(todoResponse.Id))
 }
 
-func getAttributeValue(attributes []attribute.KeyValue, key attribute.Key) *attribute.Value {
-	for _, keyValue := range attributes {
-		if keyValue.Key == key {
-			return &keyValue.Value
+func hasSpanWithName(t *testing.T, spans tracetest.SpanStubs, spanName string) tracetest.SpanStub {
+	require.NotEmpty(t, spans)
+	for _, span := range spans {
+		if assert.Equal(t, spanName, span.Name) {
+			return span
 		}
 	}
-	return nil
+	assert.Fail(t, fmt.Sprintf("No span with name '%s' found", spanName))
+	return tracetest.SpanStub{}
+}
+
+func hasAttribute(t *testing.T, span tracetest.SpanStub, key attribute.Key, value attribute.Value) bool {
+	for _, keyValue := range span.Attributes {
+		if keyValue.Key == key {
+			return assert.Equal(t, keyValue.Value, value)
+		}
+	}
+
+	return assert.Fail(t, fmt.Sprintf("No attribute with key '%s' found", key))
 }
