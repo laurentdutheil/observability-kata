@@ -56,6 +56,23 @@ func TestGetTodos(t *testing.T) {
 	assertTodoResponse(t, todos[1], id2)
 }
 
+func TestAddAllTodos(t *testing.T) {
+	server := rest.NewApiServer()
+
+	todosForPost := validSeveralTodosForPost()
+	request, _ := http.NewRequest(http.MethodPost, "/todo-list", bytes.NewBuffer(todosForPost))
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, request)
+
+	assert.Equal(t, http.StatusCreated, response.Code)
+	var todos []rest.Todo
+	_ = json.NewDecoder(response.Body).Decode(&todos)
+	assert.Len(t, todos, 3)
+	assertTodoResponse(t, todos[0])
+	assertTodoResponse(t, todos[1])
+	assertTodoResponse(t, todos[2])
+}
+
 func createValidTodo(server *rest.ApiServer) int {
 	bodyPost := validTodoForPost()
 	r := postTodoCreation(server, bodyPost)
@@ -93,5 +110,14 @@ func validTodoForPost() []byte {
 		"title": "New Todo",
 		"description": "Description of the todo"
 	}`)
+	return bodyPost
+}
+
+func validSeveralTodosForPost() []byte {
+	bodyPost := []byte(`[
+		{ "title": "New Todo", "description": "Description of the todo" },
+		{ "title": "New Todo", "description": "Description of the todo" },
+		{ "title": "New Todo", "description": "Description of the todo" }
+	]`)
 	return bodyPost
 }

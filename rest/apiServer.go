@@ -33,7 +33,8 @@ func NewApiServer() *ApiServer {
 	handleFunc("/healthcheck", api.HealthcheckHandler)
 	handleFunc("/todo/{id}", api.TodoHandlerGet)
 	handleFunc("/todo", api.TodoHandlerAdd)
-	handleFunc("/todo-list", api.TodoHandlerGetAll)
+	handleFunc("GET /todo-list", api.TodoHandlerGetAll)
+	handleFunc("POST /todo-list", api.TodoHandlerAddAll)
 
 	api.Handler = otelhttp.NewHandler(router, "/")
 	return api
@@ -76,6 +77,23 @@ func (s ApiServer) TodoHandlerGetAll(writer http.ResponseWriter, _ *http.Request
 	body, _ := json.Marshal(bodyResponse)
 
 	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write(body)
+}
+
+func (s ApiServer) TodoHandlerAddAll(writer http.ResponseWriter, request *http.Request) {
+	var bodyTodos []Todo
+	_ = json.NewDecoder(request.Body).Decode(&bodyTodos)
+	_ = request.Body.Close()
+
+	var todos []Todo
+	for _, bodyTodo := range bodyTodos {
+		todo := s.repository.AddTodo(bodyTodo.Title, bodyTodo.Description)
+		todos = append(todos, createJsonTodo(todo))
+	}
+
+	body, _ := json.Marshal(todos)
+
+	writer.WriteHeader(http.StatusCreated)
 	_, _ = writer.Write(body)
 }
 
