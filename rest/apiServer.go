@@ -63,11 +63,11 @@ func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write(body)
 	case "POST":
-		var m map[string]interface{}
-		_ = json.NewDecoder(request.Body).Decode(&m)
+		var bodyTodo Todo
+		_ = json.NewDecoder(request.Body).Decode(&bodyTodo)
 		_ = request.Body.Close()
 
-		todo := s.repository.AddTodo(m["title"].(string), m["description"].(string))
+		todo := s.repository.AddTodo(bodyTodo.Title, bodyTodo.Description)
 		body, _ := json.Marshal(createJsonTodo(todo))
 
 		span := trace.SpanFromContext(request.Context())
