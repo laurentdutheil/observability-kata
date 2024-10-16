@@ -44,7 +44,7 @@ func TestGetTodos(t *testing.T) {
 	id1 := createValidTodo(server)
 	id2 := createValidTodo(server)
 
-	request, _ := http.NewRequest(http.MethodGet, "/todo", nil)
+	request, _ := http.NewRequest(http.MethodGet, "/todo-list", nil)
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, request)
 

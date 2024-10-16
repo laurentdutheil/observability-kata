@@ -32,7 +32,8 @@ func NewApiServer() *ApiServer {
 
 	handleFunc("/healthcheck", api.HealthcheckHandler)
 	handleFunc("/todo/{id}", api.TodoHandlerGet)
-	handleFunc("/todo", api.TodoHandler)
+	handleFunc("/todo", api.TodoHandlerAdd)
+	handleFunc("/todo-list", api.TodoHandlerGetAll)
 
 	api.Handler = otelhttp.NewHandler(router, "/")
 	return api
@@ -50,34 +51,32 @@ func (s ApiServer) HealthcheckHandler(writer http.ResponseWriter, _ *http.Reques
 	_, _ = writer.Write(body)
 }
 
-func (s ApiServer) TodoHandler(writer http.ResponseWriter, request *http.Request) {
-	switch request.Method {
-	case "GET":
-		todos := s.repository.All()
-		var bodyResponse []Todo
-		for _, todo := range todos {
-			bodyResponse = append(bodyResponse, createJsonTodo(todo))
-		}
-		body, _ := json.Marshal(bodyResponse)
+func (s ApiServer) TodoHandlerAdd(writer http.ResponseWriter, request *http.Request) {
+	var bodyTodo Todo
+	_ = json.NewDecoder(request.Body).Decode(&bodyTodo)
+	_ = request.Body.Close()
 
-		writer.WriteHeader(http.StatusOK)
-		_, _ = writer.Write(body)
-	case "POST":
-		var bodyTodo Todo
-		_ = json.NewDecoder(request.Body).Decode(&bodyTodo)
-		_ = request.Body.Close()
+	todo := s.repository.AddTodo(bodyTodo.Title, bodyTodo.Description)
+	body, _ := json.Marshal(createJsonTodo(todo))
 
-		todo := s.repository.AddTodo(bodyTodo.Title, bodyTodo.Description)
-		body, _ := json.Marshal(createJsonTodo(todo))
+	span := trace.SpanFromContext(request.Context())
+	span.SetName("todo creation")
+	span.SetAttributes(attribute.Int("id", todo.Id))
 
-		span := trace.SpanFromContext(request.Context())
-		span.SetName("todo creation")
-		span.SetAttributes(attribute.Int("id", todo.Id))
+	writer.WriteHeader(http.StatusCreated)
+	_, _ = writer.Write(body)
+}
 
-		writer.WriteHeader(http.StatusCreated)
-		_, _ = writer.Write(body)
-
+func (s ApiServer) TodoHandlerGetAll(writer http.ResponseWriter, _ *http.Request) {
+	todos := s.repository.All()
+	var bodyResponse []Todo
+	for _, todo := range todos {
+		bodyResponse = append(bodyResponse, createJsonTodo(todo))
 	}
+	body, _ := json.Marshal(bodyResponse)
+
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write(body)
 }
 
 func (s ApiServer) TodoHandlerGet(writer http.ResponseWriter, request *http.Request) {
