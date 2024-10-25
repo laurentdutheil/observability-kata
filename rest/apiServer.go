@@ -57,7 +57,7 @@ func (s ApiServer) TodoHandlerAdd(writer http.ResponseWriter, request *http.Requ
 	_ = json.NewDecoder(request.Body).Decode(&bodyTodo)
 	_ = request.Body.Close()
 
-	todo := s.repository.AddTodo(bodyTodo.Title, bodyTodo.Description)
+	todo := s.repository.AddTodo(request.Context(), bodyTodo.Title, bodyTodo.Description)
 	body, _ := json.Marshal(createJsonTodo(todo))
 
 	span := trace.SpanFromContext(request.Context())
@@ -85,9 +85,12 @@ func (s ApiServer) TodoHandlerAddAll(writer http.ResponseWriter, request *http.R
 	_ = json.NewDecoder(request.Body).Decode(&bodyTodos)
 	_ = request.Body.Close()
 
+	span := trace.SpanFromContext(request.Context())
+	span.SetName("todo creation all")
+
 	var todos []Todo
 	for _, bodyTodo := range bodyTodos {
-		todo := s.repository.AddTodo(bodyTodo.Title, bodyTodo.Description)
+		todo := s.repository.AddTodo(request.Context(), bodyTodo.Title, bodyTodo.Description)
 		todos = append(todos, createJsonTodo(todo))
 	}
 
