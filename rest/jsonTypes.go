@@ -1,6 +1,8 @@
 package rest
 
-import "todo_odd/repository"
+import (
+	"todo_odd/domain"
+)
 
 type Health struct {
 	Status   string   `json:"status"`
@@ -13,10 +15,18 @@ type Todo struct {
 	Description string `json:"description"`
 }
 
-func createJsonTodo(rTodo repository.Todo) Todo {
+func (t Todo) ToDomainTodo() domain.Todo {
+	return domain.Todo{
+		Id:          t.Id,
+		Title:       t.Title,
+		Description: t.Description,
+	}
+}
+
+func createJsonTodo(todo domain.Todo) Todo {
 	return Todo{
-		Id:          rTodo.Id,
-		Title:       rTodo.Title,
-		Description: rTodo.Description,
+		Id:          todo.Id,
+		Title:       todo.Title,
+		Description: todo.Description,
 	}
 }
