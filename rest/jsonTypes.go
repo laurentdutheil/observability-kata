@@ -15,6 +15,10 @@ type Todo struct {
 	Description string `json:"description"`
 }
 
+type Error struct {
+	Message string `json:"message"`
+}
+
 func (t Todo) ToDomainTodo() domain.Todo {
 	return domain.Todo{
 		Id:          t.Id,

@@ -6,6 +6,6 @@ import (
 
 type TodoRepository interface {
 	AddTodo(ctx context.Context, title string, description string) Todo
-	Get(id int) Todo
+	Get(id int) (Todo, error)
 	All() []Todo
 }

@@ -38,6 +38,18 @@ func TestGetTodoById(t *testing.T) {
 	assertTodoResponse(t, parseTodoResponse(response), id)
 }
 
+func TestGetTodoByIdFail(t *testing.T) {
+	server := rest.NewApiServer()
+
+	requestURL := fmt.Sprintf("/todo/%d", 1)
+	request, _ := http.NewRequest(http.MethodGet, requestURL, nil)
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, request)
+
+	assert.Equal(t, http.StatusNotFound, response.Code)
+	assertErrorResponse(t, parseErrorResponse(response), "todo #1 does not exist")
+}
+
 func TestGetTodos(t *testing.T) {
 	server := rest.NewApiServer()
 
@@ -91,10 +103,20 @@ func assertTodoResponse(t *testing.T, todoResponse rest.Todo, expectedId ...int)
 	assert.Equal(t, "Description of the todo", todoResponse.Description)
 }
 
+func assertErrorResponse(t *testing.T, response rest.Error, expectedErrorMessage string) {
+	assert.Equal(t, expectedErrorMessage, response.Message)
+}
+
 func parseTodoResponse(response *httptest.ResponseRecorder) rest.Todo {
 	var todo rest.Todo
 	_ = json.NewDecoder(response.Body).Decode(&todo)
 	return todo
+}
+
+func parseErrorResponse(response *httptest.ResponseRecorder) rest.Error {
+	var errorResponse rest.Error
+	_ = json.NewDecoder(response.Body).Decode(&errorResponse)
+	return errorResponse
 }
 
 func postTodoCreation(server *rest.ApiServer, bodyPost []byte) *httptest.ResponseRecorder {

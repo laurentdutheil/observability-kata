@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"fmt"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -19,8 +20,12 @@ func (s TodoService) AddTodo(ctx context.Context, title string, description stri
 	return todo
 }
 
-func (s TodoService) GetTodo(todoId int) Todo {
-	return s.Repository.Get(todoId)
+func (s TodoService) GetTodo(todoId int) (Todo, error) {
+	todo, err := s.Repository.Get(todoId)
+	if err != nil {
+		return Todo{}, fmt.Errorf("todo #%d does not exist", todoId)
+	}
+	return todo, err
 }
 
 func (s TodoService) GetAll() []Todo {

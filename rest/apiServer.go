@@ -57,7 +57,13 @@ func (s ApiServer) TodoHandlerGet(writer http.ResponseWriter, request *http.Requ
 	pathId := request.PathValue("id")
 	todoId, _ := strconv.Atoi(pathId)
 
-	todo := s.service.GetTodo(todoId)
+	todo, err := s.service.GetTodo(todoId)
+	if err != nil {
+		writer.WriteHeader(http.StatusNotFound)
+		body, _ := json.Marshal(Error{Message: err.Error()})
+		_, _ = writer.Write(body)
+		return
+	}
 
 	writer.WriteHeader(http.StatusOK)
 	body, _ := json.Marshal(createJsonTodo(todo))

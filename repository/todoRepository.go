@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"todo_odd/domain"
@@ -28,8 +29,11 @@ func (r *TodoRepository) AddTodo(ctx context.Context, title string, description 
 	return todo
 }
 
-func (r *TodoRepository) Get(id int) domain.Todo {
-	return r.todos[id-1]
+func (r *TodoRepository) Get(id int) (domain.Todo, error) {
+	if id > len(r.todos) {
+		return domain.Todo{}, fmt.Errorf("repository: todo #%d does not exist", id)
+	}
+	return r.todos[id-1], nil
 }
 
 func (r *TodoRepository) All() []domain.Todo {
