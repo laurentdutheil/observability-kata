@@ -3,20 +3,24 @@ package domain
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type TodoService struct {
 	Repository TodoRepository
 }
 
+var tracer = otel.Tracer("")
+
 func (s TodoService) AddTodo(ctx context.Context, title string, description string) Todo {
+	ctx, span := tracer.Start(ctx, "todo creation")
+	defer span.End()
+
 	todo := s.Repository.AddTodo(ctx, title, description)
 
-	span := trace.SpanFromContext(ctx)
-	span.SetName("todo creation")
 	span.SetAttributes(attribute.Int("id", todo.Id))
+
 	return todo
 }
 
@@ -33,8 +37,8 @@ func (s TodoService) GetAll() []Todo {
 }
 
 func (s TodoService) AddAllTodos(ctx context.Context, requestTodos []Todo) []Todo {
-	span := trace.SpanFromContext(ctx)
-	span.SetName("todo creation all")
+	ctx, span := tracer.Start(ctx, "todo creation all")
+	defer span.End()
 
 	var todos []Todo
 	for _, requestTodo := range requestTodos {

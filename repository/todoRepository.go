@@ -12,8 +12,10 @@ type TodoRepository struct {
 	todos []domain.Todo
 }
 
+var tracer = otel.Tracer("")
+
 func (r *TodoRepository) AddTodo(ctx context.Context, title string, description string) domain.Todo {
-	_, span := otel.Tracer("").Start(ctx, "repository creation")
+	_, span := tracer.Start(ctx, "repository creation")
 	defer span.End()
 
 	todo := domain.Todo{

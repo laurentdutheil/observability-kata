@@ -15,19 +15,27 @@ import (
 	"todo_odd/rest"
 )
 
-func TestTraceTodoCreation(t *testing.T) {
-	inMemoryExporter := tracetest.NewInMemoryExporter()
-	provider := trace.NewTracerProvider(trace.WithSyncer(inMemoryExporter))
+var (
+	inMemoryExporter = tracetest.NewInMemoryExporter()
+	provider         = trace.NewTracerProvider(trace.WithSyncer(inMemoryExporter))
+	server           = rest.NewApiServer()
+)
+
+func init() {
 	otel.SetTracerProvider(provider)
+}
 
-	server := rest.NewApiServer()
+func TestTraceTodoCreation(t *testing.T) {
+	// Arrange
+	inMemoryExporter.Reset()
 
+	// Act
 	bodyPost := validTodoForPost()
 	request, _ := http.NewRequest(http.MethodPost, "/todo", bytes.NewBuffer(bodyPost))
-	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, request)
 
+	// Assert
 	spans := inMemoryExporter.GetSpans()
 	span := getFirstSpanWithName(t, spans, "todo creation")
 	todoResponse := parseTodoResponse(response)
@@ -35,17 +43,16 @@ func TestTraceTodoCreation(t *testing.T) {
 }
 
 func TestTraceTodoCreationAllNestedSpans(t *testing.T) {
-	inMemoryExporter := tracetest.NewInMemoryExporter()
-	provider := trace.NewTracerProvider(trace.WithSyncer(inMemoryExporter))
-	otel.SetTracerProvider(provider)
-
-	server := rest.NewApiServer()
-
+	// Arrange
 	todosForPost := validSeveralTodosForPost()
+	inMemoryExporter.Reset()
+
+	// Act
 	request, _ := http.NewRequest(http.MethodPost, "/todo-list", bytes.NewBuffer(todosForPost))
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, request)
 
+	// Assert
 	spans := inMemoryExporter.GetSpans()
 	span := getFirstSpanWithName(t, spans, "todo creation all")
 	parallelSpans := getSpansWithName(t, spans, "todo creation repo")
