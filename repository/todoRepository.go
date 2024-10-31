@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"todo_odd/domain"
 )
 
@@ -12,22 +13,19 @@ type TodoRepository struct {
 	todos []domain.Todo
 }
 
-var tracer = otel.Tracer("")
-
 func (r *TodoRepository) AddTodo(ctx context.Context, title string, description string) domain.Todo {
-	_, span := tracer.Start(ctx, "repository creation")
-	defer span.End()
+	instrumentation := startInstrumentation(ctx, "todo creation repo")
+	defer instrumentation.stopInstrumentation()
 
 	todo := domain.Todo{
 		Id:          len(r.todos) + 1,
 		Title:       title,
 		Description: description,
 	}
-
-	span.SetName("todo creation repo")
-	span.SetAttributes(attribute.Int("id", todo.Id))
-
 	r.todos = append(r.todos, todo)
+
+	instrumentation.todoCreated(todo.Id)
+
 	return todo
 }
 
@@ -40,4 +38,24 @@ func (r *TodoRepository) Get(id int) (domain.Todo, error) {
 
 func (r *TodoRepository) All() []domain.Todo {
 	return r.todos
+}
+
+type TodoRepositoryInstrumentation struct {
+	ctx    context.Context
+	tracer trace.Tracer
+	span   trace.Span
+}
+
+func startInstrumentation(ctx context.Context, name string) *TodoRepositoryInstrumentation {
+	i := &TodoRepositoryInstrumentation{ctx: ctx, tracer: otel.Tracer("")}
+	i.ctx, i.span = i.tracer.Start(i.ctx, name)
+	return i
+}
+
+func (i *TodoRepositoryInstrumentation) stopInstrumentation() {
+	i.span.End()
+}
+
+func (i *TodoRepositoryInstrumentation) todoCreated(id int) {
+	i.span.SetAttributes(attribute.Int("id", id))
 }

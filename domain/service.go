@@ -5,21 +5,20 @@ import (
 	"fmt"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type TodoService struct {
 	Repository TodoRepository
 }
 
-var tracer = otel.Tracer("")
-
 func (s TodoService) AddTodo(ctx context.Context, title string, description string) Todo {
-	ctx, span := tracer.Start(ctx, "todo creation")
-	defer span.End()
+	instrumentation := startInstrumentation(ctx, "todo creation")
+	defer instrumentation.stopInstrumentation()
 
-	todo := s.Repository.AddTodo(ctx, title, description)
+	todo := s.Repository.AddTodo(instrumentation.ctx, title, description)
 
-	span.SetAttributes(attribute.Int("id", todo.Id))
+	instrumentation.todoCreated(todo.Id)
 
 	return todo
 }
@@ -37,13 +36,33 @@ func (s TodoService) GetAll() []Todo {
 }
 
 func (s TodoService) AddAllTodos(ctx context.Context, requestTodos []Todo) []Todo {
-	ctx, span := tracer.Start(ctx, "todo creation all")
-	defer span.End()
+	instrumentation := startInstrumentation(ctx, "todo creation all")
+	defer instrumentation.stopInstrumentation()
 
 	var todos []Todo
 	for _, requestTodo := range requestTodos {
-		todo := s.Repository.AddTodo(ctx, requestTodo.Title, requestTodo.Description)
+		todo := s.Repository.AddTodo(instrumentation.ctx, requestTodo.Title, requestTodo.Description)
 		todos = append(todos, todo)
 	}
 	return todos
+}
+
+type ServiceInstrumentation struct {
+	ctx    context.Context
+	tracer trace.Tracer
+	span   trace.Span
+}
+
+func startInstrumentation(ctx context.Context, name string) *ServiceInstrumentation {
+	i := &ServiceInstrumentation{ctx: ctx, tracer: otel.Tracer("")}
+	i.ctx, i.span = i.tracer.Start(i.ctx, name)
+	return i
+}
+
+func (i *ServiceInstrumentation) stopInstrumentation() {
+	i.span.End()
+}
+
+func (i *ServiceInstrumentation) todoCreated(id int) {
+	i.span.SetAttributes(attribute.Int("id", id))
 }
