@@ -8,11 +8,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"todo_odd/repository"
 	"todo_odd/rest"
 )
 
 func TestAddValidTodo(t *testing.T) {
-	server := rest.NewApiServer()
+	sqliteRepository := repository.NewSqliteRepository()
+	defer sqliteRepository.Close()
+
+	server := rest.NewApiServer(sqliteRepository)
 
 	bodyPost := validTodoForPost()
 	request, _ := http.NewRequest(http.MethodPost, "/todo", bytes.NewBuffer(bodyPost))
@@ -25,7 +29,10 @@ func TestAddValidTodo(t *testing.T) {
 }
 
 func TestGetTodoById(t *testing.T) {
-	server := rest.NewApiServer()
+	sqliteRepository := repository.NewSqliteRepository()
+	defer sqliteRepository.Close()
+
+	server := rest.NewApiServer(sqliteRepository)
 
 	id := createValidTodo(server)
 
@@ -39,19 +46,25 @@ func TestGetTodoById(t *testing.T) {
 }
 
 func TestGetTodoByIdFail(t *testing.T) {
-	server := rest.NewApiServer()
+	sqliteRepository := repository.NewSqliteRepository()
+	defer sqliteRepository.Close()
 
-	requestURL := fmt.Sprintf("/todo/%d", 1)
+	server := rest.NewApiServer(sqliteRepository)
+
+	requestURL := fmt.Sprintf("/todo/%d", 0)
 	request, _ := http.NewRequest(http.MethodGet, requestURL, nil)
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, request)
 
 	assert.Equal(t, http.StatusNotFound, response.Code)
-	assertErrorResponse(t, parseErrorResponse(response), "todo #1 does not exist")
+	assertErrorResponse(t, parseErrorResponse(response), "todo #0 does not exist")
 }
 
 func TestGetTodos(t *testing.T) {
-	server := rest.NewApiServer()
+	sqliteRepository := repository.NewSqliteRepository()
+	defer sqliteRepository.Close()
+
+	server := rest.NewApiServer(sqliteRepository)
 
 	id1 := createValidTodo(server)
 	id2 := createValidTodo(server)
@@ -69,7 +82,10 @@ func TestGetTodos(t *testing.T) {
 }
 
 func TestAddAllTodos(t *testing.T) {
-	server := rest.NewApiServer()
+	sqliteRepository := repository.NewSqliteRepository()
+	defer sqliteRepository.Close()
+
+	server := rest.NewApiServer(sqliteRepository)
 
 	todosForPost := validSeveralTodosForPost()
 	request, _ := http.NewRequest(http.MethodPost, "/todo-list", bytes.NewBuffer(todosForPost))

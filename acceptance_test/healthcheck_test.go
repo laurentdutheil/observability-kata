@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"todo_odd/repository"
 	"todo_odd/rest"
 )
 
 func TestHappyHealthcheck(t *testing.T) {
-	server := rest.NewApiServer()
+	server := rest.NewApiServer(&repository.TodoRepository{})
 
 	request, _ := http.NewRequest(http.MethodGet, "/healthcheck", nil)
 	response := httptest.NewRecorder()

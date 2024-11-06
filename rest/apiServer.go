@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"todo_odd/domain"
-	"todo_odd/repository"
 )
 
 type ApiServer struct {
@@ -14,9 +13,8 @@ type ApiServer struct {
 	service domain.TodoService
 }
 
-func NewApiServer() *ApiServer {
+func NewApiServer(todoRepository domain.TodoRepository) *ApiServer {
 
-	todoRepository := &repository.TodoRepository{}
 	api := &ApiServer{
 		service: domain.TodoService{Repository: todoRepository},
 	}

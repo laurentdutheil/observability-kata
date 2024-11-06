@@ -12,13 +12,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"todo_odd/repository"
 	"todo_odd/rest"
 )
 
 var (
 	inMemoryExporter = tracetest.NewInMemoryExporter()
 	provider         = trace.NewTracerProvider(trace.WithSyncer(inMemoryExporter))
-	server           = rest.NewApiServer()
 )
 
 func init() {
@@ -27,6 +27,7 @@ func init() {
 
 func TestTraceTodoCreation(t *testing.T) {
 	// Arrange
+	server := rest.NewApiServer(&repository.TodoRepository{})
 	inMemoryExporter.Reset()
 
 	// Act
@@ -44,6 +45,7 @@ func TestTraceTodoCreation(t *testing.T) {
 
 func TestTraceTodoCreationAllNestedSpans(t *testing.T) {
 	// Arrange
+	server := rest.NewApiServer(&repository.TodoRepository{})
 	todosForPost := validSeveralTodosForPost()
 	inMemoryExporter.Reset()
 
