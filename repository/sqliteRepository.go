@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
 	"todo_odd/domain"
 )
 
@@ -15,27 +14,28 @@ type SqliteRepository struct {
 func NewSqliteRepository() *SqliteRepository {
 	db, err := sql.Open("sqlite3", "file::memory:")
 	if err != nil {
-		log.Fatal(err)
+		return nil
 	}
 
 	sqlStmt := "create table todo (id integer not null primary key, title text, description text);"
 
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
+		println("%q: %s", err, sqlStmt)
 	}
 
 	return &SqliteRepository{db}
 }
 
-func (r SqliteRepository) AddTodo(ctx context.Context, title string, description string) domain.Todo {
+func (r SqliteRepository) AddTodo(ctx context.Context, title string, description string) (domain.Todo, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
-		log.Fatal(err)
+		return domain.Todo{}, err
 	}
+
 	stmt, err := tx.Prepare("insert into todo(id, title, description) values(?, ?, ?);")
 	if err != nil {
-		log.Fatal(err)
+		return domain.Todo{}, err
 	}
 	defer func(stmt *sql.Stmt) {
 		_ = stmt.Close()
@@ -43,28 +43,27 @@ func (r SqliteRepository) AddTodo(ctx context.Context, title string, description
 
 	result, err := stmt.Exec(nil, title, description)
 	if err != nil {
-		log.Fatal(err)
+		return domain.Todo{}, err
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		log.Fatal(err)
+		return domain.Todo{}, err
 	}
 	err = tx.Commit()
 	if err != nil {
-		log.Fatal(err)
+		return domain.Todo{}, err
 	}
 
 	return domain.Todo{
 		Id:          int(lastInsertId),
 		Title:       title,
 		Description: description,
-	}
+	}, nil
 }
 
 func (r SqliteRepository) Get(id int) (domain.Todo, error) {
 	stmt, err := r.db.Prepare("select id, title, description from todo where id=?")
 	if err != nil {
-		log.Fatal(err)
 		return domain.Todo{}, err
 	}
 	defer func(stmt *sql.Stmt) {
@@ -76,7 +75,6 @@ func (r SqliteRepository) Get(id int) (domain.Todo, error) {
 	var qDescription string
 	err = stmt.QueryRow(id).Scan(&qId, &qTitle, &qDescription)
 	if err != nil {
-		log.Println(err)
 		return domain.Todo{}, err
 	}
 
@@ -87,10 +85,10 @@ func (r SqliteRepository) Get(id int) (domain.Todo, error) {
 	}, nil
 }
 
-func (r SqliteRepository) All() []domain.Todo {
+func (r SqliteRepository) All() ([]domain.Todo, error) {
 	rows, err := r.db.Query("select id, title, description from todo")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer func(rows *sql.Rows) {
 		_ = rows.Close()
@@ -103,7 +101,7 @@ func (r SqliteRepository) All() []domain.Todo {
 		var qDescription string
 		err = rows.Scan(&qId, &qTitle, &qDescription)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		allTodos = append(allTodos, domain.Todo{
 			Id:          qId,
@@ -112,7 +110,7 @@ func (r SqliteRepository) All() []domain.Todo {
 		})
 	}
 
-	return allTodos
+	return allTodos, nil
 }
 
 func (r SqliteRepository) Close() {

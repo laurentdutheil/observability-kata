@@ -13,7 +13,7 @@ type TodoRepository struct {
 	todos []domain.Todo
 }
 
-func (r *TodoRepository) AddTodo(ctx context.Context, title string, description string) domain.Todo {
+func (r *TodoRepository) AddTodo(ctx context.Context, title string, description string) (domain.Todo, error) {
 	instrumentation := startInstrumentation(ctx, "todo creation repo")
 	defer instrumentation.stopInstrumentation()
 
@@ -26,7 +26,7 @@ func (r *TodoRepository) AddTodo(ctx context.Context, title string, description 
 
 	instrumentation.todoCreated(todo.Id)
 
-	return todo
+	return todo, nil
 }
 
 func (r *TodoRepository) Get(id int) (domain.Todo, error) {
@@ -36,8 +36,8 @@ func (r *TodoRepository) Get(id int) (domain.Todo, error) {
 	return r.todos[id-1], nil
 }
 
-func (r *TodoRepository) All() []domain.Todo {
-	return r.todos
+func (r *TodoRepository) All() ([]domain.Todo, error) {
+	return r.todos, nil
 }
 
 type TodoRepositoryInstrumentation struct {

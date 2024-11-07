@@ -81,7 +81,7 @@ func (s ApiServer) TodoHandlerAdd(writer http.ResponseWriter, request *http.Requ
 }
 
 func (s ApiServer) TodoHandlerGetAll(writer http.ResponseWriter, _ *http.Request) {
-	todos := s.service.GetAll()
+	todos, _ := s.service.GetAll()
 
 	var bodyResponse []Todo
 	for _, todo := range todos {

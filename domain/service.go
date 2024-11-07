@@ -16,7 +16,7 @@ func (s TodoService) AddTodo(ctx context.Context, title string, description stri
 	instrumentation := startInstrumentation(ctx, "todo creation")
 	defer instrumentation.stopInstrumentation()
 
-	todo := s.Repository.AddTodo(instrumentation.ctx, title, description)
+	todo, _ := s.Repository.AddTodo(instrumentation.ctx, title, description)
 
 	instrumentation.todoCreated(todo.Id)
 
@@ -31,7 +31,7 @@ func (s TodoService) GetTodo(todoId int) (Todo, error) {
 	return todo, err
 }
 
-func (s TodoService) GetAll() []Todo {
+func (s TodoService) GetAll() ([]Todo, error) {
 	return s.Repository.All()
 }
 
@@ -41,7 +41,7 @@ func (s TodoService) AddAllTodos(ctx context.Context, requestTodos []Todo) []Tod
 
 	var todos []Todo
 	for _, requestTodo := range requestTodos {
-		todo := s.Repository.AddTodo(instrumentation.ctx, requestTodo.Title, requestTodo.Description)
+		todo, _ := s.Repository.AddTodo(instrumentation.ctx, requestTodo.Title, requestTodo.Description)
 		todos = append(todos, todo)
 	}
 	return todos
