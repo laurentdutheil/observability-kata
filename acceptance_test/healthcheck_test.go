@@ -11,7 +11,7 @@ import (
 )
 
 func TestHappyHealthcheck(t *testing.T) {
-	server := rest.NewApiServer(&repository.TodoRepository{})
+	server := rest.NewApiServer(&repository.InMemoryRepository{})
 
 	request, _ := http.NewRequest(http.MethodGet, "/healthcheck", nil)
 	response := httptest.NewRecorder()

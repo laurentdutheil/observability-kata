@@ -13,10 +13,8 @@ import (
 )
 
 func TestAddValidTodo(t *testing.T) {
-	sqliteRepository := repository.NewSqliteRepository()
-	defer sqliteRepository.Close()
-
-	server := rest.NewApiServer(sqliteRepository)
+	repo := &repository.InMemoryRepository{}
+	server := rest.NewApiServer(repo)
 
 	bodyPost := validTodoForPost()
 	request, _ := http.NewRequest(http.MethodPost, "/todo", bytes.NewBuffer(bodyPost))
@@ -29,10 +27,8 @@ func TestAddValidTodo(t *testing.T) {
 }
 
 func TestGetTodoById(t *testing.T) {
-	sqliteRepository := repository.NewSqliteRepository()
-	defer sqliteRepository.Close()
-
-	server := rest.NewApiServer(sqliteRepository)
+	repo := &repository.InMemoryRepository{}
+	server := rest.NewApiServer(repo)
 
 	id := createValidTodo(server)
 
@@ -46,10 +42,8 @@ func TestGetTodoById(t *testing.T) {
 }
 
 func TestGetTodoByIdFail(t *testing.T) {
-	sqliteRepository := repository.NewSqliteRepository()
-	defer sqliteRepository.Close()
-
-	server := rest.NewApiServer(sqliteRepository)
+	repo := &repository.InMemoryRepository{}
+	server := rest.NewApiServer(repo)
 
 	requestURL := fmt.Sprintf("/todo/%d", 0)
 	request, _ := http.NewRequest(http.MethodGet, requestURL, nil)
@@ -61,10 +55,8 @@ func TestGetTodoByIdFail(t *testing.T) {
 }
 
 func TestGetTodos(t *testing.T) {
-	sqliteRepository := repository.NewSqliteRepository()
-	defer sqliteRepository.Close()
-
-	server := rest.NewApiServer(sqliteRepository)
+	repo := &repository.InMemoryRepository{}
+	server := rest.NewApiServer(repo)
 
 	id1 := createValidTodo(server)
 	id2 := createValidTodo(server)
@@ -82,10 +74,8 @@ func TestGetTodos(t *testing.T) {
 }
 
 func TestAddAllTodos(t *testing.T) {
-	sqliteRepository := repository.NewSqliteRepository()
-	defer sqliteRepository.Close()
-
-	server := rest.NewApiServer(sqliteRepository)
+	repo := &repository.InMemoryRepository{}
+	server := rest.NewApiServer(repo)
 
 	todosForPost := validSeveralTodosForPost()
 	request, _ := http.NewRequest(http.MethodPost, "/todo-list", bytes.NewBuffer(todosForPost))
