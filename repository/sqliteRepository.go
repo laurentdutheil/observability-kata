@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"todo_odd/domain"
 )
@@ -75,7 +76,7 @@ func (r SqliteRepository) Get(id int) (domain.Todo, error) {
 	var qDescription string
 	err = stmt.QueryRow(id).Scan(&qId, &qTitle, &qDescription)
 	if err != nil {
-		return domain.Todo{}, err
+		return domain.Todo{}, fmt.Errorf("repository: todo #%d does not exist", id)
 	}
 
 	return domain.Todo{
