@@ -27,7 +27,7 @@ func init() {
 
 func TestTraceTodoCreation(t *testing.T) {
 	// Arrange
-	server := rest.NewApiServer(&repository.InMemoryRepository{})
+	server := rest.NewApiServer(repository.NewSqliteRepository())
 	inMemoryExporter.Reset()
 
 	// Act
@@ -45,7 +45,7 @@ func TestTraceTodoCreation(t *testing.T) {
 
 func TestTraceTodoCreationAllNestedSpans(t *testing.T) {
 	// Arrange
-	server := rest.NewApiServer(&repository.InMemoryRepository{})
+	server := rest.NewApiServer(repository.NewSqliteRepository())
 	todosForPost := validSeveralTodosForPost()
 	inMemoryExporter.Reset()
 

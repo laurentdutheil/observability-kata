@@ -18,6 +18,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.24 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/uptrace/opentelemetry-go-extra/otelsql v0.3.2 // indirect
 	go.opentelemetry.io/otel/metric v1.31.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
