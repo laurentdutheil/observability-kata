@@ -1,12 +1,9 @@
 package repository
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/uptrace/opentelemetry-go-extra/otelsql"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"todo_odd/domain"
 )
 
@@ -15,9 +12,7 @@ type SqliteRepository struct {
 }
 
 func NewSqliteRepository() *SqliteRepository {
-	db, err := otelsql.Open("sqlite3", "file::memory:",
-		otelsql.WithAttributes(semconv.DBSystemSqlite),
-		otelsql.WithDBName("todo-db"))
+	db, err := sql.Open("sqlite3", "file::memory:")
 	if err != nil {
 		return nil
 	}
@@ -32,16 +27,13 @@ func NewSqliteRepository() *SqliteRepository {
 	return &SqliteRepository{db}
 }
 
-func (r SqliteRepository) AddTodo(ctx context.Context, title string, description string) (domain.Todo, error) {
-	instrumentation := startInstrumentation(ctx, "todo creation repo")
-	defer instrumentation.stopInstrumentation()
-
-	tx, err := r.db.BeginTx(ctx, nil)
+func (r SqliteRepository) AddTodo(title string, description string) (domain.Todo, error) {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return domain.Todo{}, err
 	}
 
-	stmt, err := tx.PrepareContext(ctx, "insert into todo(id, title, description) values(?, ?, ?);")
+	stmt, err := tx.Prepare("insert into todo(id, title, description) values(?, ?, ?);")
 	if err != nil {
 		return domain.Todo{}, err
 	}
@@ -49,7 +41,7 @@ func (r SqliteRepository) AddTodo(ctx context.Context, title string, description
 		_ = stmt.Close()
 	}(stmt)
 
-	result, err := stmt.ExecContext(ctx, nil, title, description)
+	result, err := stmt.Exec(nil, title, description)
 	if err != nil {
 		return domain.Todo{}, err
 	}
@@ -61,8 +53,6 @@ func (r SqliteRepository) AddTodo(ctx context.Context, title string, description
 	if err != nil {
 		return domain.Todo{}, err
 	}
-
-	instrumentation.todoCreated(int(lastInsertId))
 
 	return domain.Todo{
 		Id:          int(lastInsertId),

@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"fmt"
 	"todo_odd/domain"
 )
@@ -10,18 +9,13 @@ type InMemoryRepository struct {
 	todos []domain.Todo
 }
 
-func (r *InMemoryRepository) AddTodo(ctx context.Context, title string, description string) (domain.Todo, error) {
-	instrumentation := startInstrumentation(ctx, "todo creation repo")
-	defer instrumentation.stopInstrumentation()
-
+func (r *InMemoryRepository) AddTodo(title string, description string) (domain.Todo, error) {
 	todo := domain.Todo{
 		Id:          len(r.todos) + 1,
 		Title:       title,
 		Description: description,
 	}
 	r.todos = append(r.todos, todo)
-
-	instrumentation.todoCreated(todo.Id)
 
 	return todo, nil
 }

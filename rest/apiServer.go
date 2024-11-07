@@ -2,7 +2,6 @@ package rest
 
 import (
 	"encoding/json"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"net/http"
 	"strconv"
 	"todo_odd/domain"
@@ -14,28 +13,19 @@ type ApiServer struct {
 }
 
 func NewApiServer(todoRepository domain.TodoRepository) *ApiServer {
-
 	api := &ApiServer{
 		service: domain.TodoService{Repository: todoRepository},
 	}
 
 	router := http.NewServeMux()
 
-	// handleFunc is a replacement for mux.HandleFunc
-	// which enriches the handler's HTTP instrumentation with the pattern as the http.route.
-	handleFunc := func(pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
-		// Configure the "http.route" for the HTTP instrumentation.
-		handler := otelhttp.WithRouteTag(pattern, http.HandlerFunc(handlerFunc))
-		router.Handle(pattern, handler)
-	}
+	router.HandleFunc("/healthcheck", api.HealthcheckHandler)
+	router.HandleFunc("/todo/{id}", api.TodoHandlerGet)
+	router.HandleFunc("/todo", api.TodoHandlerAdd)
+	router.HandleFunc("GET /todo-list", api.TodoHandlerGetAll)
+	router.HandleFunc("POST /todo-list", api.TodoHandlerAddAll)
 
-	handleFunc("/healthcheck", api.HealthcheckHandler)
-	handleFunc("/todo/{id}", api.TodoHandlerGet)
-	handleFunc("/todo", api.TodoHandlerAdd)
-	handleFunc("GET /todo-list", api.TodoHandlerGetAll)
-	handleFunc("POST /todo-list", api.TodoHandlerAddAll)
-
-	api.Handler = otelhttp.NewHandler(router, "/")
+	api.Handler = router
 	return api
 }
 
@@ -73,7 +63,7 @@ func (s ApiServer) TodoHandlerAdd(writer http.ResponseWriter, request *http.Requ
 	_ = json.NewDecoder(request.Body).Decode(&bodyTodo)
 	_ = request.Body.Close()
 
-	todo := s.service.AddTodo(request.Context(), bodyTodo.Title, bodyTodo.Description)
+	todo := s.service.AddTodo(bodyTodo.Title, bodyTodo.Description)
 
 	writer.WriteHeader(http.StatusCreated)
 	body, _ := json.Marshal(createJsonTodo(todo))
@@ -103,7 +93,7 @@ func (s ApiServer) TodoHandlerAddAll(writer http.ResponseWriter, request *http.R
 		requestTodos = append(requestTodos, bodyTodo.ToDomainTodo())
 	}
 
-	todos := s.service.AddAllTodos(request.Context(), requestTodos)
+	todos := s.service.AddAllTodos(requestTodos)
 
 	var responseTodos []Todo
 	for _, todo := range todos {

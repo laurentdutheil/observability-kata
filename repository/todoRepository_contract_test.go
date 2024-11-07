@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -20,13 +19,12 @@ var constructors = []constructor{
 }
 
 func TestTodoRepository(t *testing.T) {
-
 	for _, newTodoRepository := range constructors {
 
 		t.Run("add todo", func(t *testing.T) {
 			repo := newTodoRepository()
 
-			todo, err := repo.AddTodo(context.Background(), "Title", "Description")
+			todo, err := repo.AddTodo("Title", "Description")
 
 			assert.NoError(t, err)
 			assert.Greater(t, todo.Id, 0)
@@ -34,7 +32,7 @@ func TestTodoRepository(t *testing.T) {
 
 		t.Run("get todo", func(t *testing.T) {
 			repo := newTodoRepository()
-			expectedTodo, _ := repo.AddTodo(context.Background(), "Title", "Description")
+			expectedTodo, _ := repo.AddTodo("Title", "Description")
 
 			got, err := repo.Get(expectedTodo.Id)
 			assert.NoError(t, err)
@@ -52,7 +50,7 @@ func TestTodoRepository(t *testing.T) {
 		t.Run("get all todos", func(t *testing.T) {
 			repo := newTodoRepository()
 			for i := 1; i <= 3; i++ {
-				_, _ = repo.AddTodo(context.Background(), fmt.Sprintf("Title_%d", i), fmt.Sprintf("Description_%d", i))
+				_, _ = repo.AddTodo(fmt.Sprintf("Title_%d", i), fmt.Sprintf("Description_%d", i))
 			}
 
 			todos, err := repo.All()
@@ -62,8 +60,6 @@ func TestTodoRepository(t *testing.T) {
 				assert.Equal(t, fmt.Sprintf("Title_%d", i), todos[i-1].Title)
 				assert.Equal(t, fmt.Sprintf("Description_%d", i), todos[i-1].Description)
 			}
-
 		})
 	}
-
 }
